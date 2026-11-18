@@ -1,63 +1,57 @@
-#!/bin/bash
-# deploy.sh - runs ON THE SERVER as the deploy user (A9, steps 2-6, plus A13)
-# Usage: deploy.sh COMMIT_SHA PUSHER_NAME
-# The workflow first uploads site/ and scripts/ to /var/www/TEAM/upload/
-
+#!/usr/bin/env bash
+# Usage: deploy.sh <full-sha> <actor>
+# Runs on the server as the "deploy" user. Works out the team folder
+# from its own location, so no team name is written in this file.
 set -euo pipefail
 
-COMMIT="${1:?missing commit}"
-PUSHER="${2:?missing pusher}"
-SHORT="${COMMIT:0:7}"
+SHA="${1:?usage: deploy.sh <sha> <actor>}"
+ACTOR="${2:-unknown}"
 
-TEAM="${TEAM:-robin}"
-BASE="/var/www/$TEAM"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "$(basename "$SCRIPT_DIR")" in
+  bin) BASE="$(dirname "$SCRIPT_DIR")" ;;
+  *)   BASE="$(dirname "$(dirname "$SCRIPT_DIR")")" ;;   # .../upload/scripts
+esac
+
 UPLOAD="$BASE/upload"
 RELEASES="$BASE/releases"
-LOG="$BASE/deploys.log"
-NOW=$(date '+%Y-%m-%d %H:%M:%S')
-RELEASE="$RELEASES/$(date '+%Y%m%d-%H%M%S')-$SHORT"
+BIN="$BASE/bin"
+NOW="$(date +%Y%m%d-%H%M%S)"
+REL="$RELEASES/${NOW}-${SHA:0:7}"
 
-# Two deployments must never run at the same time
-exec 9>"$BASE/.deploy.lock"
-if ! flock -n 9; then
-  echo "ERROR: another deployment is running"
-  exit 1
-fi
+echo "Deploying ${SHA:0:7} by $ACTOR to $REL"
 
-[ -d "$UPLOAD/site" ] || { echo "ERROR: $UPLOAD/site not found"; exit 1; }
-
-# 2. New release folder with a copy of site/
+# 1. new release folder from the uploaded site
 mkdir -p "$RELEASES"
-mkdir "$RELEASE"
-cp -r "$UPLOAD/site/." "$RELEASE/"
+cp -r "$UPLOAD/site" "$REL"
 
-# 3. Replace __VERSION__ in every page
-VERSION="$SHORT by $PUSHER at $NOW"
-VERSION_ESC=$(printf '%s' "$VERSION" | sed 's/[&|\\]/\\&/g')
-find "$RELEASE" -type f -name "*.html" -exec sed -i "s|__VERSION__|$VERSION_ESC|g" {} +
-
-# 4. Switch current to the new release (atomic)
-ln -sfn "$RELEASE" "$BASE/current.new"
-mv -T "$BASE/current.new" "$BASE/current"
-
-# 5. Log line
-echo "$NOW | deployed $SHORT | by $PUSHER | $(basename "$RELEASE")" >> "$LOG"
-
-# 6. Keep only the 5 newest releases
-ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +6 | xargs -r rm -rf
-
-# A13: install the scripts and the crontab
-if [ -d "$UPLOAD/scripts" ]; then
-  mkdir -p "$BASE/bin" "$BASE/live"
-  for f in status.sh traffic-report.sh rollback.sh team.conf; do
-    [ -f "$UPLOAD/scripts/$f" ] && cp "$UPLOAD/scripts/$f" "$BASE/bin/$f"
-  done
-  chmod +x "$BASE/bin/"*.sh 2>/dev/null || true
-
-  cat <<CRON | crontab -
-* * * * * $BASE/bin/status.sh
-*/5 * * * * $BASE/bin/traffic-report.sh
-CRON
+# 2. stamp the version into every page
+VERSION="$SHA by $ACTOR at $(date)"
+sed -i "s|__VERSION__|$VERSION|g" "$REL"/*.html
+if ls "$REL"/members/*.html >/dev/null 2>&1; then
+  sed -i "s|__VERSION__|$VERSION|g" "$REL"/members/*.html
 fi
+chmod -R a+rX "$REL"
 
-echo "Deployed $SHORT to $RELEASE"
+# 3. switch the live link to the new release
+ln -sfn "$REL" "$BASE/current"
+
+# 4. log it
+echo "$(date '+%F %T') DEPLOY ${SHA:0:7} by $ACTOR -> $(basename "$REL")" >> "$BASE/deploys.log"
+
+# 5. keep only the 5 newest releases
+ls -dt "$RELEASES"/* | tail -n +6 | xargs -r rm -rf
+
+# 6. A13: install scripts, config and crontab
+mkdir -p "$BIN"
+cp "$UPLOAD"/scripts/*.sh "$BIN"/ 2>/dev/null || true
+cp "$UPLOAD"/scripts/team.conf "$BIN"/ 2>/dev/null || true
+chmod +x "$BIN"/*.sh 2>/dev/null || true
+
+cat > "$BIN/crontab.txt" <<EOF
+* * * * * $BIN/status.sh
+*/5 * * * * $BIN/traffic-report.sh
+EOF
+crontab "$BIN/crontab.txt"
+
+echo "Deploy finished"

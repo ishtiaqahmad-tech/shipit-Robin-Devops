@@ -1,0 +1,72 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# never run two deploys at once
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  TEAM_NAME: ${{ vars.TEAM_NAME }}
+  DOMAIN: ${{ vars.DOMAIN }}
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Clean old upload
+        run: |
+          ssh deploy@"$DEPLOY_HOST" "rm -rf /var/www/$TEAM_NAME/upload/site /var/www/$TEAM_NAME/upload/scripts"
+
+      - name: Upload
+        run: |
+          scp -r site scripts deploy@"$DEPLOY_HOST":/var/www/"$TEAM_NAME"/upload/
+
+      - name: Run deploy.sh on server
+        run: |
+          ssh deploy@"$DEPLOY_HOST" "bash /var/www/$TEAM_NAME/upload/scripts/deploy.sh ${{ github.sha }} ${{ github.actor }}"
+
+      - name: Health check
+        run: |
+          SHORT="${GITHUB_SHA::7}"
+          for i in 1 2 3 4 5; do
+            body=$(curl -fsS -H "Host: $DOMAIN" "http://$DEPLOY_HOST/" || true)
+            if grep -q "$SHORT" <<< "$body"; then
+              echo "Health check passed ($SHORT found on the page)"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 3
+          done
+          echo "Health check failed: $SHORT not found on the page"
+          exit 1
+
+      - name: Slack
+        if: always()
+        env:
+          WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          MSG="Deploy ${STATUS}: ${GITHUB_SHA::7} by ${ACTOR} ${RUN_URL}"
+          curl -fsS -X POST -H 'Content-type: application/json' \
+            --data "$(jq -n --arg text "$MSG" '{text: $text}')" \
+            "$WEBHOOK"

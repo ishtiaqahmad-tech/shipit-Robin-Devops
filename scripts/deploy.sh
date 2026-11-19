@@ -1,16 +1,21 @@
 #!/bin/bash
 # deploy.sh - runs ON THE SERVER as the deploy user (A9, steps 2-6, plus A13)
-# Usage: deploy.sh COMMIT_SHA PUSHER_NAME
 # The workflow first uploads site/ and scripts/ to /var/www/TEAM/upload/
 
 set -euo pipefail
 
+# Usage: deploy.sh [BASE_DIR] COMMIT_SHA PUSHER_NAME
+# The workflow calls: deploy.sh /var/www/robin <full_sha> <who_pushed>
+if [[ "${1:-}" == /* ]]; then
+  BASE="$1"
+  shift
+fi
 COMMIT="${1:?missing commit}"
 PUSHER="${2:?missing pusher}"
 SHORT="${COMMIT:0:7}"
 
-TEAM="${TEAM:-robin}"
-BASE="/var/www/$TEAM"
+TEAM="${TEAM:-${TEAM_NAME:-robin}}"
+BASE="${BASE:-/var/www/$TEAM}"
 UPLOAD="$BASE/upload"
 RELEASES="$BASE/releases"
 LOG="$BASE/deploys.log"

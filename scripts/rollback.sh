@@ -1,13 +1,17 @@
 #!/bin/bash
 # rollback.sh - runs ON THE SERVER as the deploy user (A10)
-# Usage: rollback.sh PUSHER_NAME
 # Points "current" back to the release before the one that is live now.
 
 set -euo pipefail
 
+# Usage: rollback.sh [BASE_DIR] PUSHER_NAME
+if [[ "${1:-}" == /* ]]; then
+  BASE="$1"
+  shift
+fi
 PUSHER="${1:-unknown}"
-TEAM="${TEAM:-robin}"
-BASE="/var/www/$TEAM"
+TEAM="${TEAM:-${TEAM_NAME:-robin}}"
+BASE="${BASE:-/var/www/$TEAM}"
 RELEASES="$BASE/releases"
 LOG="$BASE/deploys.log"
 NOW=$(date '+%Y-%m-%d %H:%M:%S')

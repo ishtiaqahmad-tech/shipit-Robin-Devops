@@ -27,7 +27,7 @@ DISK_PCT=$(df / | awk 'NR==2 {gsub("%","",$5); print $5}')
 DISK=$(df -h / | awk 'NR==2 {print $3 " used of " $2 " (" $5 ")"}')
 
 if systemctl is-active --quiet nginx; then
-  NGINX="running"
+  NGINX="Running"
   NGINX_OK=1
 else
   NGINX="NOT running"
@@ -48,27 +48,27 @@ fi
 
 # ---- Warnings ----
 WARNINGS=""
+DISK_STYLE=""
+NGINX_STYLE=""
 if [ "$DISK_PCT" -gt 80 ]; then
   WARNINGS="${WARNINGS}Disk is ${DISK_PCT}% full. "
+  DISK_STYLE="border-color:#f87171;"
 fi
 if [ "$NGINX_OK" -eq 0 ]; then
   WARNINGS="${WARNINGS}Nginx is not running. "
+  NGINX_STYLE="border-color:#f87171;"
 fi
 
 if [ -n "$WARNINGS" ]; then
   STATE_NOW="warning"
-  AVATAR="!"
-  AVATAR_COLOR="#dc2626"
-  BADGE="WARNING"
-  BADGE_STYLE="background:#fee2e2;color:#dc2626;"
-  WARN_TEXT="<p style=\"color:#dc2626;font-weight:bold;margin-bottom:12px;\">WARNING: $WARNINGS</p>"
+  BADGE="Warning"
+  BADGE_STYLE="background:rgba(248,113,113,0.15);color:#f87171;"
+  WARN_BOX="<div class=\"box\" style=\"border-color:#f87171;margin-bottom:18px;\"><span class=\"num\" style=\"background:none;color:#f87171;-webkit-text-fill-color:#f87171;\">WARNING</span><p style=\"color:#fecaca;font-weight:600;margin-top:6px;\">$WARNINGS</p></div>"
 else
   STATE_NOW="ok"
-  AVATAR="OK"
-  AVATAR_COLOR="#16a34a"
   BADGE="All systems OK"
   BADGE_STYLE=""
-  WARN_TEXT=""
+  WARN_BOX=""
 fi
 
 # ---- Write the page (to a temp file, then move, so it is never half-written) ----
@@ -80,26 +80,84 @@ cat > "$TMP" <<EOF
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="refresh" content="30">
   <title>$TEAM server status</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="team-card" style="max-width:520px;text-align:left;">
-    <div class="avatar" style="background:$AVATAR_COLOR;">$AVATAR</div>
-    <h2 style="text-align:center;">$TEAM server status</h2>
-    <div style="text-align:center;"><h3 style="$BADGE_STYLE">$BADGE</h3></div>
-    $WARN_TEXT
-    <p><b>Hostname:</b> $HOST</p>
-    <p><b>Page written:</b> $NOW</p>
-    <p><b>Uptime:</b> $UPTIME</p>
-    <p><b>Load (1/5/15 min):</b> $LOAD</p>
-    <p><b>Memory:</b> $MEM</p>
-    <p><b>Disk (/):</b> $DISK</p>
-    <p><b>Nginx:</b> $NGINX</p>
-    <p><b>Live release:</b> $RELEASE</p>
-    <p style="margin-top:14px;"><b>Last 5 deploys:</b></p>
-    <p style="white-space:pre-wrap;font-family:monospace;font-size:12px;">$DEPLOYS</p>
-    <p style="margin-top:14px;text-align:center;"><a href="/index.html">Back to home</a></p>
-  </div>
+
+  <header class="navbar">
+    <a href="/index.html" class="logo">ROBIN<span>.</span></a>
+    <nav>
+      <a href="/index.html#home">Home</a>
+      <a href="/index.html#team">Team</a>
+      <a href="/index.html#pipeline">Pipeline</a>
+      <a href="/index.html#release">Release</a>
+      <a href="/live/status.html" class="live">Telemetry</a>
+      <a href="/live/report.html" class="live">Traffic</a>
+    </nav>
+  </header>
+
+  <section class="hero" style="padding-bottom:30px;">
+    <span class="hero-tag">Live telemetry</span>
+    <h1><span>Server Status</span></h1>
+    <p>Refreshed every minute by a cron job on the server.</p>
+    <span class="role" style="$BADGE_STYLE">$BADGE</span>
+  </section>
+
+  <section class="block" style="padding-top:20px;">
+    $WARN_BOX
+
+    <div class="steps">
+      <div class="box">
+        <span class="num">HOST</span>
+        <h3>$HOST</h3>
+        <p>Server hostname</p>
+      </div>
+      <div class="box">
+        <span class="num">UPTIME</span>
+        <h3>$UPTIME</h3>
+        <p>Time since the last reboot</p>
+      </div>
+      <div class="box">
+        <span class="num">LOAD</span>
+        <h3>$LOAD</h3>
+        <p>Average over 1, 5 and 15 minutes</p>
+      </div>
+      <div class="box">
+        <span class="num">MEMORY</span>
+        <h3>$MEM</h3>
+        <p>RAM in use</p>
+      </div>
+      <div class="box" style="$DISK_STYLE">
+        <span class="num">DISK</span>
+        <h3>$DISK</h3>
+        <p>Main disk (warns above 80%)</p>
+      </div>
+      <div class="box" style="$NGINX_STYLE">
+        <span class="num">NGINX</span>
+        <h3>$NGINX</h3>
+        <p>Web server status</p>
+      </div>
+      <div class="box">
+        <span class="num">LIVE RELEASE</span>
+        <h3 style="word-break:break-all;">$RELEASE</h3>
+        <p>Version currently served</p>
+      </div>
+    </div>
+
+    <div class="box" style="margin-top:18px;">
+      <span class="num">LAST 5 DEPLOYS</span>
+      <p style="white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-top:10px;">$DEPLOYS</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <h2>TEAM ROBIN</h2>
+    <p>Page written: $NOW</p>
+    <p class="version">This page refreshes itself every 30 seconds</p>
+  </footer>
+
 </body>
 </html>
 EOF

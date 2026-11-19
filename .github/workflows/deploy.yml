@@ -1,0 +1,79 @@
+# A9 - deploy every push to main (or by hand from the Actions tab)
+# Needs GitHub variables: DEPLOY_HOST, TEAM_NAME, DOMAIN
+# Needs GitHub secrets:   DEPLOY_SSH_KEY, SSH_KNOWN_HOSTS, SLACK_WEBHOOK_URL
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  TEAM_NAME: ${{ vars.TEAM_NAME }}
+  DOMAIN: ${{ vars.DOMAIN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload site/ and scripts/ to the server
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          BASE="/var/www/$TEAM_NAME"
+          ssh -o BatchMode=yes deploy@"$HOST" "mkdir -p $BASE/upload && rm -rf $BASE/upload/site $BASE/upload/scripts"
+          scp -o BatchMode=yes -r site scripts deploy@"$HOST":"$BASE"/upload/
+
+      - name: Run deploy.sh on the server
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          BASE="/var/www/$TEAM_NAME"
+          # deploy.sh <base_dir> <full_commit_sha> <who_pushed>
+          ssh -o BatchMode=yes deploy@"$HOST" \
+            "bash $BASE/upload/scripts/deploy.sh '$BASE' '$GITHUB_SHA' '$ACTOR'"
+
+      - name: Health check (from outside the server)
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          SHORT="${GITHUB_SHA::7}"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS -H "Host: $DOMAIN" "http://$HOST/" | grep -q "$SHORT"; then
+              echo "Health check passed: the site shows $SHORT"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check FAILED: the site does not show $SHORT"
+          exit 1
+
+      - name: Report to #TEAM-alerts
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          SHORT="${GITHUB_SHA::7}"
+          if [ "$STATUS" = "success" ]; then ICON=":white_check_mark:"; else ICON=":x:"; fi
+          jq -n --arg t "$ICON Deploy *$STATUS* | commit \`$SHORT\` | pushed by $ACTOR | <$RUN_URL|workflow run>" '{text:$t}' \
+            | curl -fsS -X POST -H 'Content-type: application/json' --data @- "$SLACK_WEBHOOK_URL"

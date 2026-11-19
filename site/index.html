@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +6,8 @@
 
     <title>Team Robin | DevOps Team</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -18,26 +19,35 @@
 
         <nav>
             <a href="#home">Home</a>
-            <a href="#team">Our Team</a>
-            <a href="#about">About</a>
-            <a href="#project">Project</a>
+            <a href="#team">Team</a>
+            <a href="#pipeline">Pipeline</a>
+            <a href="#release">Release</a>
+            <a href="/live/status.html" class="live">Telemetry</a>
+            <a href="/live/report.html" class="live">Traffic</a>
         </nav>
     </header>
 
 
     <!-- Hero Section -->
     <section class="hero" id="home">
-        <div class="hero-content">
-            <span class="hero-tag">DEVOPS BOOTCAMP TEAM</span>
+        <span class="hero-tag">DevOps Bootcamp Team</span>
 
-            <h1>Welcome to <span>Team Robin</span></h1>
+        <h1>Welcome to <span>Team Robin</span></h1>
 
-            <p>
-                We are a team of four passionate developers working together
-                to build, deploy, automate and maintain reliable web applications.
-            </p>
+        <p>
+            We are a team of four developers working together to build,
+            deploy, automate and maintain a reliable website, without
+            ever logging in to the server by hand.
+        </p>
 
-            <a href="#team" class="hero-btn">Meet Our Team</a>
+        <a href="#team" class="hero-btn">Meet Our Team</a>
+        <a href="#pipeline" class="btn ghost">See the Pipeline</a>
+
+        <div class="stats">
+            <div class="stat"><b>4</b><span>Team members</span></div>
+            <div class="stat"><b>6</b><span>Project phases</span></div>
+            <div class="stat"><b>14</b><span>Tasks (A0 to A13)</span></div>
+            <div class="stat"><b>0</b><span>Manual deploys</span></div>
         </div>
     </section>
 
@@ -46,7 +56,7 @@
     <section class="team-section" id="team">
 
         <div class="section-heading">
-            <span>THE PEOPLE BEHIND THE PROJECT</span>
+            <span>The people behind the project</span>
             <h2>Meet Our Team</h2>
             <p>Four members, four responsibilities, one goal.</p>
         </div>
@@ -60,7 +70,7 @@
                     <h3>Ishtiaq Ahmad</h3>
                     <span class="role">Team Lead</span>
                     <p>
-                        Manages team activities, Jira tasks, GitHub repository,
+                        Manages team activities, Jira tasks, the GitHub repository,
                         pull requests and project progress.
                     </p>
                     <span class="profile-link">View Profile →</span>
@@ -75,7 +85,7 @@
                     <h3>Israr Khan</h3>
                     <span class="role">Server Admin</span>
                     <p>
-                        Manages Ubuntu server, Linux users, SSH access,
+                        Manages the Ubuntu server, Linux users, SSH access,
                         server security and Nginx configuration.
                     </p>
                     <span class="profile-link">View Profile →</span>
@@ -119,36 +129,147 @@
     <!-- About Section -->
     <section class="about-section" id="about">
         <div class="about-content">
-            <span>WHO WE ARE</span>
-            <h2>Working Together as One Team</h2>
+            <span>Who we are</span>
+            <h2>Working Together as <span class="grad">One Team</span></h2>
 
             <p>
-                Team Robin is a four-member DevOps team participating in
-                the ShipIt Sprint activity. We collaborate using GitHub,
-                Jira and Slack to plan, develop, test and deploy a website.
+                Team Robin is a four-member DevOps team taking part in the
+                ShipIt Sprint activity. We plan our work in Jira, talk only
+                on Slack, and keep all our code in one GitHub repository
+                where every change goes through a branch, a pull request
+                and a review before it reaches the live website.
             </p>
+        </div>
+    </section>
+
+
+    <!-- Pipeline Section -->
+    <section class="block" id="pipeline">
+        <div class="section-heading">
+            <span>How a change reaches the site</span>
+            <h2>The Pipeline</h2>
+            <p>From an idea on the Jira board to a live page, automatically.</p>
+        </div>
+
+        <div class="steps">
+            <div class="box">
+                <span class="num">01 // PLAN</span>
+                <h3>Jira issue</h3>
+                <p>Every task starts as a Jira issue and moves across the board from To Do to Done.</p>
+            </div>
+            <div class="box">
+                <span class="num">02 // BRANCH</span>
+                <h3>Work on a branch</h3>
+                <p>Nobody pushes to <code>main</code>. Each member works on a branch named after the Jira key.</p>
+            </div>
+            <div class="box">
+                <span class="num">03 // REVIEW</span>
+                <h3>Pull request</h3>
+                <p>Every change needs a pull request and at least one teammate's approval.</p>
+            </div>
+            <div class="box">
+                <span class="num">04 // CHECK</span>
+                <h3>Automatic checks</h3>
+                <p><code>check-site.sh</code> looks for missing titles, broken links and oversized files.</p>
+            </div>
+            <div class="box">
+                <span class="num">05 // DEPLOY</span>
+                <h3>GitHub Actions</h3>
+                <p>When a pull request is merged, a workflow uploads the site and runs <code>deploy.sh</code> on the server.</p>
+            </div>
+            <div class="box">
+                <span class="num">06 // ALERT</span>
+                <h3>Slack message</h3>
+                <p>The result of every deploy is posted to the team alerts channel on Slack.</p>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Release Section -->
+    <section class="block" id="release">
+        <div class="section-heading">
+            <span>Safe, repeatable releases</span>
+            <h2>Release &amp; Rollback</h2>
+            <p>Every version is kept, so going back takes seconds.</p>
+        </div>
+
+        <div class="steps">
+            <div class="box">
+                <span class="num">RELEASES</span>
+                <h3>One folder per version</h3>
+                <p>Each deploy creates a new folder named with the date, time and commit.</p>
+            </div>
+            <div class="box">
+                <span class="num">SWITCH</span>
+                <h3>Instant go-live</h3>
+                <p>The live site is a link called <code>current</code> that is switched to the new folder in one step.</p>
+            </div>
+            <div class="box">
+                <span class="num">VERSION</span>
+                <h3>Stamped footer</h3>
+                <p>The footer of each page shows the commit, who pushed it and when it was deployed.</p>
+            </div>
+            <div class="box">
+                <span class="num">ROLLBACK</span>
+                <h3>One button back</h3>
+                <p><code>rollback.sh</code> points <code>current</code> to the previous release and logs who did it.</p>
+            </div>
+            <div class="box">
+                <span class="num">CLEAN-UP</span>
+                <h3>Last five kept</h3>
+                <p>Older releases are removed automatically so the server disk never fills up.</p>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Telemetry & Traffic Section -->
+    <section class="block" id="telemetry">
+        <div class="section-heading">
+            <span>Always watching</span>
+            <h2>Telemetry &amp; Traffic</h2>
+            <p>Two live pages refreshed by cron jobs on the server.</p>
+        </div>
+
+        <div class="steps">
+            <div class="box">
+                <span class="num">TELEMETRY</span>
+                <h3>Server status</h3>
+                <p>Uptime, load, memory, disk, Nginx state, the live release and the last five deploys, refreshed every minute.</p>
+            </div>
+            <div class="box">
+                <span class="num">TRAFFIC</span>
+                <h3>Traffic report</h3>
+                <p>A summary of visits to the site built from the Nginx logs every few minutes.</p>
+            </div>
+        </div>
+
+        <div class="cta">
+            <a href="/live/status.html" class="btn">Open Telemetry</a>
+            <a href="/live/report.html" class="btn ghost">Open Traffic</a>
         </div>
     </section>
 
 
     <!-- Project Section -->
     <section class="project-section" id="project">
-        <span>OUR CURRENT ACTIVITY</span>
+        <span>Our current activity</span>
         <h2>ShipIt Sprint</h2>
 
         <p>
-            Build, Ship and Run a Website Together.
+            Build, ship and run a website together.
             Our goal is to practice Git collaboration, Linux server
             administration, CI/CD automation, deployment and monitoring.
         </p>
 
         <div class="project-tools">
-            <span>Git & GitHub</span>
-            <span>Linux & Ubuntu</span>
+            <span>Git &amp; GitHub</span>
+            <span>Linux &amp; Ubuntu</span>
             <span>Nginx</span>
             <span>GitHub Actions</span>
             <span>Shell Scripting</span>
-            <span>Jira & Slack</span>
+            <span>Jira &amp; Slack</span>
         </div>
     </section>
 
@@ -157,9 +278,8 @@
     <footer class="footer">
         <h2>TEAM ROBIN</h2>
         <p>Build Together. Deploy Together. Grow Together.</p>
-        <p class="copyright">
-            © 2026 Team Robin | ShipIt Sprint DevOps Activity
-        </p>
+        <p class="copyright">© 2026 Team Robin | ShipIt Sprint DevOps Activity</p>
+        <p class="version">Version: __VERSION__</p>
     </footer>
 
 </body>

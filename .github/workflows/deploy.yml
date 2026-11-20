@@ -55,7 +55,7 @@ jobs:
         run: |
           SHORT="${GITHUB_SHA::7}"
           for i in 1 2 3 4 5 6; do
-            if curl -fsS -H "Host: $DOMAIN" "http://$HOST/" | grep -q "$SHORT"; then
+            if curl -fsSL "http://$DOMAIN/" | grep -q "$SHORT"; then
               echo "Health check passed: the site shows $SHORT"
               exit 0
             fi

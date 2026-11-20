@@ -10,7 +10,7 @@ if [[ "${1:-}" == /* ]]; then
   shift
 fi
 PUSHER="${1:-unknown}"
-TEAM="${TEAM:-${TEAM_NAME:-robin}}"
+TEAM="${TEAM:-${TEAM_NAME:-shipit-Robin-Devops}}"
 BASE="${BASE:-/var/www/$TEAM}"
 RELEASES="$BASE/releases"
 LOG="$BASE/deploys.log"

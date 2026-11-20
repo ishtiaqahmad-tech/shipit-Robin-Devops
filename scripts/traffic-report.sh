@@ -5,7 +5,7 @@
 # Load TEAM from team.conf (same folder as this script)
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/team.conf"
-TEAM="${TEAM:-${TEAM_NAME:-robin}}"
+TEAM="${TEAM:-${TEAM_NAME:-shipit-Robin-Devops}}"
 
 BASE="/var/www/$TEAM"
 LOG="/var/log/nginx/$TEAM.access.log"

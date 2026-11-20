@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Usage: deploy.sh [BASE_DIR] COMMIT_SHA PUSHER_NAME
-# The workflow calls: deploy.sh /var/www/robin <full_sha> <who_pushed>
+# The workflow calls: deploy.sh /var/www/shipit-Robin-Devops <full_sha> <who_pushed>
 if [[ "${1:-}" == /* ]]; then
   BASE="$1"
   shift
@@ -14,7 +14,7 @@ COMMIT="${1:?missing commit}"
 PUSHER="${2:?missing pusher}"
 SHORT="${COMMIT:0:7}"
 
-TEAM="${TEAM:-${TEAM_NAME:-robin}}"
+TEAM="${TEAM:-${TEAM_NAME:-shipit-Robin-Devops}}"
 BASE="${BASE:-/var/www/$TEAM}"
 UPLOAD="$BASE/upload"
 RELEASES="$BASE/releases"

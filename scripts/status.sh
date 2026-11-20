@@ -7,7 +7,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/team.conf"
 
 # If team.conf uses different variable names, fix them here:
-TEAM="${TEAM:-${TEAM_NAME:-robin}}"
+TEAM="${TEAM:-${TEAM_NAME:-shipit-Robin-Devops}}"
 
 BASE="/var/www/$TEAM"
 OUT="$BASE/live/status.html"
